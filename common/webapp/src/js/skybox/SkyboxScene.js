@@ -35,14 +35,28 @@ uniform vec3 sunDirection;
 varying float vVisibility;
 
 void main() {
-	vec4 worldPos = modelMatrix * vec4(position, 1.0);
+	// Rotate stars around Z axis in lockstep with the sun & moon
+	vec3 sDir = normalize(sunDirection);
+	float cosA = sDir.y;
+	float sinA = -sDir.x;
+	vec3 rotatedPos = vec3(
+		position.x * cosA - position.y * sinA,
+		position.x * sinA + position.y * cosA,
+		position.z
+	);
+
+	vec4 worldPos = modelMatrix * vec4(rotatedPos, 1.0);
 	vec3 worldDir = normalize(worldPos.xyz);
 
+	// Fade stars near horizon so they never shine through terrain
 	float horizon = smoothstep(0.01, 0.12, worldDir.y);
+
+	// Occlude stars directly behind the moon disk
 	float moonOcclusion = 1.0;
-	if (dot(worldDir, -sunDirection) > 0.96) {
+	if (dot(worldDir, -sDir) > 0.98) {
 		moonOcclusion = 0.0;
 	}
+
 	vVisibility = starBrightness * horizon * moonOcclusion;
 
 	vec4 mvPosition = viewMatrix * worldPos;
