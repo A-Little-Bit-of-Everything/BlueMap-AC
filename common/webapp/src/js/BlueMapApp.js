@@ -627,6 +627,17 @@ export class BlueMapApp {
             let v1 = row === 0 ? 1.0 : 0.5;
             uniforms.moonUv.value.set(u0, v0, u1, v1);
         }
+
+        let light = uniforms.sunlightStrength ? uniforms.sunlightStrength.value : 1.0;
+        let starBrightness = Math.max(0, Math.min(1, (1.0 - (light - 0.25) / 0.35)));
+        if (uniforms.starBrightness) {
+            uniforms.starBrightness.value = starBrightness;
+        }
+
+        if (this.mapViewer && this.mapViewer.skyboxScene && this.mapViewer.skyboxScene.starPoints) {
+            this.mapViewer.skyboxScene.starPoints.rotation.z = angle;
+            this.mapViewer.skyboxScene.starPoints.updateMatrix();
+        }
     }
 
     updateControlsSettings() {

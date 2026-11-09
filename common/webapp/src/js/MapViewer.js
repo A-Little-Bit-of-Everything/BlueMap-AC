@@ -79,6 +79,7 @@ export class MapViewer {
 				sunTexture: { value: sunTexture },
 				moonTexture: { value: moonTexture },
 				moonUv: { value: new Vector4(0, 0.5, 0.25, 1.0) },
+				starBrightness: { value: 0.0 },
 				dayTime: { value: 6000 },
 				chunkBorders: { value: false },
 				hiresTileMap: {

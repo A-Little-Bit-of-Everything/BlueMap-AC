@@ -38,26 +38,7 @@ uniform vec4 moonUv;
 
 varying vec3 vPosition;
 
-float hash31(vec3 p) {
-	p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
-	p *= 17.0;
-	return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-}
 
-float getStars(vec3 dir) {
-	if (dir.y <= 0.02) return 0.0;
-	vec3 p = dir * 140.0;
-	vec3 id = floor(p);
-	vec3 f = fract(p) - 0.5;
-	float rnd = hash31(id);
-	if (rnd > 0.965) {
-		float d = length(f);
-		float star = smoothstep(0.35, 0.05, d) * (0.65 + 0.35 * sin(rnd * 40.0));
-		float horizonFade = smoothstep(0.02, 0.12, dir.y);
-		return star * horizonFade;
-	}
-	return 0.0;
-}
 
 void main() {
 	vec3 dir = normalize(vPosition);
@@ -119,16 +100,7 @@ void main() {
 		}
 	}
 
-	// Minecraft stars (1500 stars visible at night)
-	float starVisibility = clamp(1.0 - (sunlightStrength - 0.25) / 0.35, 0.0, 1.0);
-	if (starVisibility > 0.01 && dir.y > 0.0) {
-		float stars = getStars(dir);
-		// Hide stars behind lit moon pixels
-		if (length(moonSample.rgb) > 0.15) {
-			stars = 0.0;
-		}
-		sky += vec3(stars, stars, stars) * starVisibility;
-	}
+
 
 	// Minecraft Sun with authentic sun.png texture
 	float sunCos = dot(dir, sDir);

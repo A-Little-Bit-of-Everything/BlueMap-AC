@@ -22,10 +22,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-import {BackSide, Mesh, Scene, ShaderMaterial, SphereGeometry} from 'three';
+import {AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, Mesh, Points, Scene, ShaderMaterial, SphereGeometry} from 'three';
 
 import {SKY_FRAGMENT_SHADER} from './SkyFragmentShader';
 import {SKY_VERTEX_SHADER} from './SkyVertexShader';
+import {MINECRAFT_STAR_POSITIONS, MINECRAFT_STAR_SIZES} from './MinecraftStars';
+
+const STAR_VERTEX_SHADER = `
+attribute float aSize;
+uniform float starBrightness;
+uniform vec3 sunDirection;
+varying float vVisibility;
+
+void main() {
+	vec4 worldPos = modelMatrix * vec4(position, 1.0);
+	vec3 worldDir = normalize(worldPos.xyz);
+
+	float horizon = smoothstep(0.01, 0.12, worldDir.y);
+	float moonOcclusion = 1.0;
+	if (dot(worldDir, -sunDirection) > 0.96) {
+		moonOcclusion = 0.0;
+	}
+	vVisibility = starBrightness * horizon * moonOcclusion;
+
+	vec4 mvPosition = viewMatrix * worldPos;
+	gl_PointSize = clamp(aSize * 15.0, 1.5, 4.5);
+	gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+const STAR_FRAGMENT_SHADER = `
+precision highp float;
+varying float vVisibility;
+
+void main() {
+	if (vVisibility <= 0.01) discard;
+	vec2 coord = gl_PointCoord - vec2(0.5);
+	if (abs(coord.x) > 0.45 || abs(coord.y) > 0.45) discard;
+	gl_FragColor = vec4(vec3(0.9, 0.95, 1.0) * vVisibility, vVisibility);
+}
+`;
 
 export class SkyboxScene extends Scene {
 
@@ -45,8 +81,27 @@ export class SkyboxScene extends Scene {
 			depthWrite: false
 		});
 		let skybox = new Mesh(geometry, material);
-
+		skybox.renderOrder = 0;
 		this.add(skybox);
+
+		// Authentic 764 vanilla Minecraft stars
+		let starGeometry = new BufferGeometry();
+		starGeometry.setAttribute('position', new BufferAttribute(MINECRAFT_STAR_POSITIONS, 3));
+		starGeometry.setAttribute('aSize', new BufferAttribute(MINECRAFT_STAR_SIZES, 1));
+
+		let starMaterial = new ShaderMaterial({
+			uniforms: uniforms,
+			vertexShader: STAR_VERTEX_SHADER,
+			fragmentShader: STAR_FRAGMENT_SHADER,
+			transparent: true,
+			blending: AdditiveBlending,
+			depthWrite: false
+		});
+
+		this.starPoints = new Points(starGeometry, starMaterial);
+		this.starPoints.renderOrder = 1;
+		this.starPoints.matrixAutoUpdate = false;
+		this.add(this.starPoints);
 	}
 
 }
