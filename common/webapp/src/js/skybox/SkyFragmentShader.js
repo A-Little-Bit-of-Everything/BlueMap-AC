@@ -97,10 +97,39 @@ void main() {
 		}
 	}
 
+	// Minecraft Moon with authentic moon_phases.png texture
+	float moonCos = dot(dir, mDir);
+	vec4 moonSample = vec4(0.0);
+	if (moonCos > 0.2 && mDir.y > -0.3) {
+		float moonFactor = clamp(1.0 - dayFactor, 0.0, 1.0);
+		// Moon halo
+		float halo = pow(max(0.0, moonCos), 36.0) * 0.25 + pow(max(0.0, moonCos), 6.0) * 0.06;
+		vec3 haloColor = vec3(0.75, 0.85, 1.0);
+		sky += haloColor * halo * moonFactor;
+
+		// Minecraft moon_phases.png quad (size ~0.18 rad)
+		vec3 mUpVec = abs(mDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+		vec3 mRightVec = normalize(cross(mDir, mUpVec));
+		vec3 mForwardVec = cross(mRightVec, mDir);
+		float mu = dot(dir, mRightVec) / moonCos;
+		float mv = dot(dir, mForwardVec) / moonCos;
+		float moonSize = 0.18;
+		vec2 moonTexUv = vec2(mu / moonSize + 0.5, mv / moonSize + 0.5);
+		if (moonTexUv.x >= 0.0 && moonTexUv.x <= 1.0 && moonTexUv.y >= 0.0 && moonTexUv.y <= 1.0) {
+			vec2 mappedUv = vec2(mix(moonUv.x, moonUv.z, moonTexUv.x), mix(moonUv.y, moonUv.w, 1.0 - moonTexUv.y));
+			moonSample = texture2D(moonTexture, mappedUv);
+			sky += moonSample.rgb * moonFactor * 1.5;
+		}
+	}
+
 	// Minecraft stars (1500 stars visible at night)
 	float starVisibility = clamp(1.0 - (sunlightStrength - 0.25) / 0.35, 0.0, 1.0);
 	if (starVisibility > 0.01 && dir.y > 0.0) {
 		float stars = getStars(dir);
+		// Hide stars behind lit moon pixels
+		if (length(moonSample.rgb) > 0.02) {
+			stars = 0.0;
+		}
 		sky += vec3(stars, stars, stars) * starVisibility;
 	}
 
@@ -123,30 +152,6 @@ void main() {
 		if (sunTexUv.x >= 0.0 && sunTexUv.x <= 1.0 && sunTexUv.y >= 0.0 && sunTexUv.y <= 1.0) {
 			vec4 sunSample = texture2D(sunTexture, sunTexUv);
 			sky += sunSample.rgb * dayFactor * 1.5;
-		}
-	}
-
-	// Minecraft Moon with authentic moon_phases.png texture
-	float moonCos = dot(dir, mDir);
-	if (moonCos > 0.2 && mDir.y > -0.3) {
-		float moonFactor = clamp(1.0 - dayFactor, 0.0, 1.0);
-		// Moon halo
-		float halo = pow(max(0.0, moonCos), 36.0) * 0.25 + pow(max(0.0, moonCos), 6.0) * 0.06;
-		vec3 haloColor = vec3(0.75, 0.85, 1.0);
-		sky += haloColor * halo * moonFactor;
-
-		// Minecraft moon_phases.png quad (size ~0.18 rad)
-		vec3 mUpVec = abs(mDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
-		vec3 mRightVec = normalize(cross(mDir, mUpVec));
-		vec3 mForwardVec = cross(mRightVec, mDir);
-		float mu = dot(dir, mRightVec) / moonCos;
-		float mv = dot(dir, mForwardVec) / moonCos;
-		float moonSize = 0.18;
-		vec2 moonTexUv = vec2(mu / moonSize + 0.5, mv / moonSize + 0.5);
-		if (moonTexUv.x >= 0.0 && moonTexUv.x <= 1.0 && moonTexUv.y >= 0.0 && moonTexUv.y <= 1.0) {
-			vec2 mappedUv = vec2(mix(moonUv.x, moonUv.z, moonTexUv.x), mix(moonUv.y, moonUv.w, 1.0 - moonTexUv.y));
-			vec4 moonSample = texture2D(moonTexture, mappedUv);
-			sky += moonSample.rgb * moonFactor * 1.3;
 		}
 	}
 
