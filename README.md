@@ -1,3 +1,29 @@
+# BlueMap (Custom Fork)
+
+> [!NOTE]
+> **This repository is a modified fork of [BlueMap](https://github.com/BlueMap-Minecraft/BlueMap) with custom rendering engine enhancements, celestial skybox overhauls, and runtime modding hooks.**
+
+---
+
+### Fork Modifications & Enhancements
+
+#### 1. Authentic Vanilla Celestial Skybox & 764-Star Constellations (`common/webapp`)
+- **Authentic Star Constellation Map:** Replaced the default procedural pseudo-random noise with the exact 764 3D star coordinates and quad sizes generated from Minecraft's vanilla `RandomSource(10842L)`.
+- **GPU-Accelerated Celestial Lockstep Rotation:** All 764 stars rotate smoothly in the GPU vertex shader around the celestial Z-axis in direct lockstep with `sunDirection`, preserving celestial alignment across day/night cycles without CPU matrix overhead.
+- **Natural Moon Occlusion:** The moon disc dynamically occludes background stars as it traverses the night sky, eliminating stars shining through the lunar body.
+- **Eliminated Glare & Singularities:** Removed the excessive artificial bloom/corona haze from `SkyFragmentShader.js` in favor of authentic Minecraft pixel quads, and resolved projection singularities at zenith and nadir.
+
+#### 2. Runtime Block Renderer Extensibility (`core`)
+- **Registry Delegation Fix:** In `BlockStateModelRenderer`, updated variant renderer resolution to look up `BlockRendererType.REGISTRY.get(variant.getRenderer().getKey())`. This allows server-side companion mods (such as **BlueMap Disguise** and **BlueMap CTM**) to register and wrap default block renderers at runtime.
+
+#### 3. Resilient Biome Color Calculator Resolution (`core`)
+- **Flexible Calculator Type Parsing:** Updated `BlockColorsConfig` to recognize standard calculator names (`foliage`, `grass`, `water`, `dry_foliage`, `redstone`) even when declared without the legacy leading `@` prefix in custom pack definitions.
+
+#### 4. NeoForge 1.21.1 Tooling & Shading (`implementations/neoforge`)
+- Added `mergeShadowAndJarJar` build task to produce a clean, unified NeoForge artifact with all runtime dependencies and metadata properly packaged.
+
+---
+
 [![title-banner](https://bluecolored.de/paste/BluemapBanner.png)](https://bluemap.bluecolored.de/)
 
 <div align="center">
