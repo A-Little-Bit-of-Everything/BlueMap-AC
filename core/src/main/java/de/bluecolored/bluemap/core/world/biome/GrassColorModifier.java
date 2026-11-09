@@ -39,8 +39,8 @@ public interface GrassColorModifier extends Keyed, ColorModifier {
 
     SimplexNoise SWAMP_GRASS_NOISE = new SimplexNoise(new Random(2345L));
 
-    GrassColorModifier NONE = new Impl(Key.minecraft("none"), (BlockAccess _, Color _) -> {});
-    GrassColorModifier DARK_FOREST = new Impl(Key.minecraft("dark_forest"), (BlockAccess _, Color color) ->
+    GrassColorModifier NONE = new Impl(Key.minecraft("none"), (BlockAccess block, Color color) -> {});
+    GrassColorModifier DARK_FOREST = new Impl(Key.minecraft("dark_forest"), (BlockAccess block, Color color) ->
             color.set(((color.getInt() & 0xfefefe) + 0x28340a >> 1) | 0xff000000, true)
     );
     GrassColorModifier SWAMP = new Impl(Key.minecraft("swamp"), (BlockAccess block, Color color) -> {

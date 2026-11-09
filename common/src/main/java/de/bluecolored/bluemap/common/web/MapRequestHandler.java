@@ -42,6 +42,7 @@ public class MapRequestHandler extends RoutingRequestHandler implements Closeabl
 
     private @Nullable LiveDataSupplierBroadcaster<String> markerDataBroadcaster;
     private @Nullable LiveDataSupplierBroadcaster<String> playerDataBroadcaster;
+    private @Nullable LiveDataSupplierBroadcaster<String> worldDataBroadcaster;
 
     public MapRequestHandler(
             BmMap map,
@@ -49,7 +50,17 @@ public class MapRequestHandler extends RoutingRequestHandler implements Closeabl
             @Nullable Supplier<String> liveMarkerDataSupplier,
             boolean useSSE
     ) {
-        this(map.getStorage(), livePlayersDataSupplier, liveMarkerDataSupplier, useSSE);
+        this(map, livePlayersDataSupplier, liveMarkerDataSupplier, null, useSSE);
+    }
+
+    public MapRequestHandler(
+            BmMap map,
+            @Nullable Supplier<String> livePlayersDataSupplier,
+            @Nullable Supplier<String> liveMarkerDataSupplier,
+            @Nullable Supplier<String> liveWorldDataSupplier,
+            boolean useSSE
+    ) {
+        this(map.getStorage(), livePlayersDataSupplier, liveMarkerDataSupplier, liveWorldDataSupplier, useSSE);
 
         if (useSSE) {
             map.getHiresModelManager().addTileUpdateListener(tile -> onTileUpdate(tile, 0));
@@ -58,7 +69,7 @@ public class MapRequestHandler extends RoutingRequestHandler implements Closeabl
     }
 
     public MapRequestHandler(MapStorage mapStorage) {
-        this(mapStorage, null, null, false);
+        this(mapStorage, null, null, null, false);
     }
 
     public MapRequestHandler(
@@ -67,10 +78,20 @@ public class MapRequestHandler extends RoutingRequestHandler implements Closeabl
             @Nullable Supplier<String> liveMarkerDataSupplier,
             boolean useSSE
     ) {
+        this(mapStorage, livePlayersDataSupplier, liveMarkerDataSupplier, null, useSSE);
+    }
+
+    public MapRequestHandler(
+            MapStorage mapStorage,
+            @Nullable Supplier<String> livePlayersDataSupplier,
+            @Nullable Supplier<String> liveMarkerDataSupplier,
+            @Nullable Supplier<String> liveWorldDataSupplier,
+            boolean useSSE
+    ) {
         register(".*", new MapStorageRequestHandler(mapStorage));
 
         if (useSSE) {
-            register("live/sse", "", _ -> {
+            register("live/sse", "", req -> {
                 HttpResponse response = new HttpResponse(HttpStatusCode.OK);
                 response.setHeader("Content-Type", "text/event-stream");
                 response.setHeader("Cache-Control", "no-store");
@@ -97,6 +118,12 @@ public class MapRequestHandler extends RoutingRequestHandler implements Closeabl
             this.playerDataBroadcaster = new LiveDataSupplierBroadcaster<>(livePlayersDataSupplier, 1000);
             if (useSSE) registerSseCallback(this.playerDataBroadcaster, this::onPlayerUpdate);
             register("live/players\\.json", "", new JsonDataRequestHandler(this.playerDataBroadcaster));
+        }
+
+        if (liveWorldDataSupplier != null) {
+            this.worldDataBroadcaster = new LiveDataSupplierBroadcaster<>(liveWorldDataSupplier, 2000);
+            if (useSSE) registerSseCallback(this.worldDataBroadcaster, this::onWorldUpdate);
+            register("live/world\\.json", "", new JsonDataRequestHandler(this.worldDataBroadcaster));
         }
     }
 
@@ -127,11 +154,16 @@ public class MapRequestHandler extends RoutingRequestHandler implements Closeabl
         sseConnections.broadcast("marker", data);
     }
 
+    private void onWorldUpdate(String data) {
+        sseConnections.broadcast("world", data);
+    }
+
     @Override
     public void close() {
         sseConnections.close();
         if (markerDataBroadcaster != null) markerDataBroadcaster.close();
         if (playerDataBroadcaster != null) playerDataBroadcaster.close();
+        if (worldDataBroadcaster != null) worldDataBroadcaster.close();
         super.close();
     }
 

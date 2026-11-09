@@ -99,7 +99,7 @@ public class MapUpdateService extends Thread {
         this.regionFingerprints = new HashMap<>();
         this.watchService = map.getWorld().createRegionWatchService();
         this.verboseLog = verbose ? Logger.global::logInfo : Logger.global::logDebug;
-        this.onFullUpdate = onFullUpdate != null ? onFullUpdate : _ -> {};
+        this.onFullUpdate = onFullUpdate != null ? onFullUpdate : ignored -> {};
     }
 
     @Override
@@ -108,7 +108,7 @@ public class MapUpdateService extends Thread {
 
         synchronized (this) {
             if (!closed && fullUpdateInterval.isPositive()) {
-                Duration delay = Instant.now().until(lastFullUpdate.plus(fullUpdateInterval));
+                Duration delay = Duration.between(Instant.now(), lastFullUpdate.plus(fullUpdateInterval));
                 if (delay.isNegative()) delay = Duration.ZERO;
                 fullUpdateTask = BlueMap.SCHEDULER.scheduleAtFixedRate(
                         this::fullUpdate,

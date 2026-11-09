@@ -161,6 +161,11 @@ public class FileMapStorage implements MapStorage {
     }
 
     @Override
+    public ItemStorage world() {
+        return new FileItemStorage(root.resolve(LIVE_PATH).resolve("world.json"), Compression.NONE, atomic);
+    }
+
+    @Override
     public void delete(DoublePredicate onProgress) throws IOException {
         if (!Files.exists(root)) return;
 

@@ -80,6 +80,11 @@ public interface MapStorage {
     ItemStorage players();
 
     /**
+     * Returns a {@link ItemStorage} for the world-data (live/world.json) of this map
+     */
+    ItemStorage world();
+
+    /**
      * Deletes the entire map from the storage
      */
     default void delete() throws IOException {

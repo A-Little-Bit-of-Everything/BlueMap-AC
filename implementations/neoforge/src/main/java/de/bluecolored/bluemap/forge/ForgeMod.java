@@ -41,7 +41,7 @@ import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -146,7 +146,7 @@ public class ForgeMod implements Server {
 
     @Override
     public String getMinecraftVersion() {
-        return SharedConstants.getCurrentVersion().id();
+        return SharedConstants.getCurrentVersion().getId();
     }
 
     @Override
@@ -173,8 +173,8 @@ public class ForgeMod implements Server {
     public Optional<ServerWorld> getServerWorld(Object world) {
 
         if (world instanceof String) {
-            Identifier identifier = Identifier.tryParse((String) world);
-            if (identifier != null) world = serverInstance.getLevel(ResourceKey.create(Registries.DIMENSION, identifier));
+            ResourceLocation resourceLocation = ResourceLocation.tryParse((String) world);
+            if (resourceLocation != null) world = serverInstance.getLevel(ResourceKey.create(Registries.DIMENSION, resourceLocation));
         }
 
         if (world instanceof ResourceKey) {
@@ -238,16 +238,21 @@ public class ForgeMod implements Server {
     public Map<Key, BlockState> getDefaultBlockstates() {
         Map<Key, BlockState> blockstates = new HashMap<>();
         for (Block block : BuiltInRegistries.BLOCK) {
-            Identifier id = BuiltInRegistries.BLOCK.getKey(block);
+            ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
             Key key = new Key(id.getNamespace(), id.getPath());
 
             Map<String, String> properties = new HashMap<>();
-            block.defaultBlockState().getValues().forEach(value ->
-                    properties.put(value.property().getName(), value.valueName()));
+            block.defaultBlockState().getValues().forEach((property, value) ->
+                    properties.put(property.getName(), getPropertyValueName(property, value)));
 
             blockstates.put(key, new BlockState(key, properties));
         }
         return blockstates;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Comparable<T>> String getPropertyValueName(net.minecraft.world.level.block.state.properties.Property<?> property, Comparable<?> value) {
+        return ((net.minecraft.world.level.block.state.properties.Property<T>) property).getName((T) value);
     }
 
     /**

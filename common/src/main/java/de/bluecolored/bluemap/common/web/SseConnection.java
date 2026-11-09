@@ -101,7 +101,7 @@ public class SseConnection implements Closeable {
                     } else {
                         event = queue.take();
                     }
-                } catch (InterruptedException _) {
+                } catch (InterruptedException ignore) {
                     runningThread.interrupt();
                     break;
                 }

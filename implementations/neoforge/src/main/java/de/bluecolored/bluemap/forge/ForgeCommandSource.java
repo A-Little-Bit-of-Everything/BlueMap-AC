@@ -34,8 +34,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.server.permissions.LevelBasedPermissionSet;
-import net.minecraft.server.permissions.Permissions;
+
+
 
 import java.util.Objects;
 import java.util.Optional;
@@ -62,7 +62,7 @@ public class ForgeCommandSource implements CommandSource {
 
     @Override
     public boolean hasPermission(String permission) {
-        return delegate.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
+        return delegate.hasPermission(1);
     }
 
     @Override

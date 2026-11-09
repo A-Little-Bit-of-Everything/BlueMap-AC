@@ -35,9 +35,10 @@ public class ColorMap {
     private final int[] colorMap;
 
     public ColorMap(BufferedImage map) {
-        int[] colorMap = new int[65536];
-        map.getRGB(0, 0, 256, 256, colorMap, 0, 256);
-        this(colorMap);
+        this.colorMap = new int[65536];
+        map.getRGB(0, 0, 256, 256, this.colorMap, 0, 256);
+
+
     }
 
     public ColorMap(int[] colorMap) {

@@ -115,7 +115,7 @@ public class LowresLayer {
 
         // atomically test every tile if it is modified and remove it if it is not
         for (Vector2i pos : pendingChanges.keySet()) {
-            pendingChanges.computeIfPresent(pos, (_, tile) -> tile.isModified() ? tile : null);
+            pendingChanges.computeIfPresent(pos, (p, tile) -> tile.isModified() ? tile : null);
         }
     }
 

@@ -7,8 +7,13 @@
     </Group>
 
     <Group :title="$t('lighting.title')">
+      <SwitchButton v-if="worldState.hasData && worldState.skyLight"
+                    :on="worldState.liveDaylight"
+                    @action="$bluemap.setLiveDaylight(!worldState.liveDaylight)">
+        {{ $t('lighting.liveDaylight') }}
+      </SwitchButton>
       <Slider :value="mapViewer.uniforms.sunlightStrength.value" :min="0" :max="1" :step="0.01"
-              @update="mapViewer.uniforms.sunlightStrength.value = $event; $bluemap.mapViewer.redraw()">{{$t('lighting.sunlight')}}</Slider>
+              @update="mapViewer.uniforms.sunlightStrength.value = $event; $bluemap.setLiveDaylight(false); $bluemap.updateCelestialDome(); $bluemap.mapViewer.redraw()">{{$t('lighting.sunlight')}}</Slider>
       <Slider :value="mapViewer.uniforms.ambientLight.value" :min="0" :max="1" :step="0.01"
               @update="mapViewer.uniforms.ambientLight.value = $event; $bluemap.mapViewer.redraw()">{{$t('lighting.ambientLight')}}</Slider>
     </Group>
@@ -90,6 +95,7 @@ name: "SettingsMenu",
   data() {
     return {
       appState: this.$bluemap.appState,
+      worldState: this.$bluemap.worldState.data,
       mapViewer: this.$bluemap.mapViewer.data,
       settings: {
         ...{

@@ -32,6 +32,10 @@ uniform vec3 voidColor;
 uniform vec3 sunDirection;
 uniform float dayTime;
 
+uniform sampler2D sunTexture;
+uniform sampler2D moonTexture;
+uniform vec4 moonUv;
+
 varying vec3 vPosition;
 
 float hash31(vec3 p) {
@@ -67,7 +71,7 @@ void main() {
 	float dayFactor = clamp((sunlightStrength - 0.25) / 0.75, 0.0, 1.0);
 	float sunAlt = sDir.y;
 
-	// Palette
+	// Palette matching Minecraft client LevelRenderer
 	vec3 daySky = skyColor;
 	vec3 dayHorizon = mix(skyColor, vec3(0.85, 0.92, 1.0), 0.65);
 	vec3 nightSky = vec3(0.012, 0.018, 0.045);
@@ -93,59 +97,56 @@ void main() {
 		}
 	}
 
-	// Night stars (fade out as daylight rises from 0.25 to 0.6)
+	// Minecraft stars (1500 stars visible at night)
 	float starVisibility = clamp(1.0 - (sunlightStrength - 0.25) / 0.35, 0.0, 1.0);
 	if (starVisibility > 0.01 && dir.y > 0.0) {
 		float stars = getStars(dir);
 		sky += vec3(stars, stars, stars) * starVisibility;
 	}
 
-	// Minecraft iconic square Sun & Corona
+	// Minecraft Sun with authentic sun.png texture
 	float sunCos = dot(dir, sDir);
-	if (sunCos > 0.0 && sDir.y > -0.25) {
+	if (sunCos > 0.2 && sDir.y > -0.3) {
 		// Sun corona glow
 		float corona = pow(max(0.0, sunCos), 48.0) * 0.45 + pow(max(0.0, sunCos), 8.0) * 0.15;
 		vec3 coronaColor = mix(vec3(1.0, 0.85, 0.6), vec3(1.0, 1.0, 0.95), clamp(sunAlt * 2.0, 0.0, 1.0));
 		sky += coronaColor * corona * dayFactor;
 
-		// Square Sun Disc
-		if (sunCos > 0.5) {
-			vec3 upVec = abs(sDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
-			vec3 rightVec = normalize(cross(sDir, upVec));
-			vec3 forwardVec = cross(rightVec, sDir);
-			float u = dot(dir, rightVec) / sunCos;
-			float v = dot(dir, forwardVec) / sunCos;
-			float maxDist = max(abs(u), abs(v));
-			float sunSquare = 1.0 - smoothstep(0.065, 0.072, maxDist);
-			if (sunSquare > 0.0) {
-				vec3 sunColor = vec3(1.0, 0.98, 0.9) * 1.5;
-				sky = mix(sky, sunColor, sunSquare);
-			}
+		// Minecraft sun.png quad (size ~0.26 rad)
+		vec3 upVec = abs(sDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+		vec3 rightVec = normalize(cross(sDir, upVec));
+		vec3 forwardVec = cross(rightVec, sDir);
+		float u = dot(dir, rightVec) / sunCos;
+		float v = dot(dir, forwardVec) / sunCos;
+		float sunSize = 0.26;
+		vec2 sunTexUv = vec2(u / sunSize + 0.5, v / sunSize + 0.5);
+		if (sunTexUv.x >= 0.0 && sunTexUv.x <= 1.0 && sunTexUv.y >= 0.0 && sunTexUv.y <= 1.0) {
+			vec4 sunSample = texture2D(sunTexture, sunTexUv);
+			sky += sunSample.rgb * dayFactor * 1.5;
 		}
 	}
 
-	// Minecraft iconic square Moon & Lunar Halo
+	// Minecraft Moon with authentic moon_phases.png texture
 	float moonCos = dot(dir, mDir);
-	if (moonCos > 0.0 && mDir.y > -0.25) {
+	if (moonCos > 0.2 && mDir.y > -0.3) {
 		float moonFactor = clamp(1.0 - dayFactor, 0.0, 1.0);
 		// Moon halo
 		float halo = pow(max(0.0, moonCos), 36.0) * 0.25 + pow(max(0.0, moonCos), 6.0) * 0.06;
 		vec3 haloColor = vec3(0.75, 0.85, 1.0);
 		sky += haloColor * halo * moonFactor;
 
-		// Square Moon Disc
-		if (moonCos > 0.5) {
-			vec3 mUpVec = abs(mDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
-			vec3 mRightVec = normalize(cross(mDir, mUpVec));
-			vec3 mForwardVec = cross(mRightVec, mDir);
-			float mu = dot(dir, mRightVec) / moonCos;
-			float mv = dot(dir, mForwardVec) / moonCos;
-			float mMaxDist = max(abs(mu), abs(mv));
-			float moonSquare = 1.0 - smoothstep(0.055, 0.062, mMaxDist);
-			if (moonSquare > 0.0) {
-				vec3 moonColor = vec3(0.92, 0.95, 1.0) * 1.3;
-				sky = mix(sky, moonColor, moonSquare * moonFactor);
-			}
+		// Minecraft moon_phases.png quad (size ~0.18 rad)
+		vec3 mUpVec = abs(mDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+		vec3 mRightVec = normalize(cross(mDir, mUpVec));
+		vec3 mForwardVec = cross(mRightVec, mDir);
+		float mu = dot(dir, mRightVec) / moonCos;
+		float mv = dot(dir, mForwardVec) / moonCos;
+		float moonSize = 0.18;
+		vec2 moonTexUv = vec2(mu / moonSize + 0.5, mv / moonSize + 0.5);
+		if (moonTexUv.x >= 0.0 && moonTexUv.x <= 1.0 && moonTexUv.y >= 0.0 && moonTexUv.y <= 1.0) {
+			vec2 mappedUv = vec2(mix(moonUv.x, moonUv.z, moonTexUv.x), mix(moonUv.y, moonUv.w, 1.0 - moonTexUv.y));
+			vec4 moonSample = texture2D(moonTexture, mappedUv);
+			sky += moonSample.rgb * moonFactor * 1.3;
 		}
 	}
 

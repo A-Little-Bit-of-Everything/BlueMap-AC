@@ -445,7 +445,7 @@ public class BlueMapService implements Closeable {
                 Map<String, Map<Key, BlockState>> defaultBlockStatesByNamespace = new HashMap<>();
                 for (Map.Entry<Key, BlockState> entry : defaultBlockStates.entrySet()) {
                     defaultBlockStatesByNamespace
-                            .computeIfAbsent(entry.getKey().getNamespace(), _ -> new HashMap<>())
+                            .computeIfAbsent(entry.getKey().getNamespace(), k -> new HashMap<>())
                             .put(entry.getKey(), entry.getValue());
                 }
 

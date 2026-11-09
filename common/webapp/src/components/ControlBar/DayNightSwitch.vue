@@ -36,6 +36,10 @@ export default {
 
         evt.preventDefault();
 
+        if (this.$bluemap.worldState && this.$bluemap.worldState.data.liveDaylight) {
+          this.$bluemap.setLiveDaylight(false);
+        }
+
         if (animation) animation.cancel();
 
         let startValue = this.mapViewer.uniforms.sunlightStrength.value;
@@ -43,6 +47,7 @@ export default {
         animation = animate(t => {
           let u = EasingFunctions.easeOutQuad(t);
           this.mapViewer.uniforms.sunlightStrength.value = startValue * (1-u) + targetValue * u;
+          if (this.$bluemap.updateCelestialDome) this.$bluemap.updateCelestialDome();
           this.$bluemap.mapViewer.redraw();
         }, 300);
       }

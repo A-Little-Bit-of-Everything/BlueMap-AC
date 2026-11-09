@@ -616,6 +616,17 @@ export class BlueMapApp {
         let sunY = Math.cos(angle);
         let sunZ = 0.2 * Math.sin(angle);
         uniforms.sunDirection.value.set(sunX, sunY, sunZ).normalize();
+
+        if (uniforms.moonUv) {
+            let phase = Math.floor(Math.abs(dayTime) / 24000) % 8;
+            let col = phase % 4;
+            let row = Math.floor(phase / 4);
+            let u0 = col * 0.25;
+            let u1 = (col + 1) * 0.25;
+            let v0 = row === 0 ? 0.5 : 0.0;
+            let v1 = row === 0 ? 1.0 : 0.5;
+            uniforms.moonUv.value.set(u0, v0, u1, v1);
+        }
     }
 
     updateControlsSettings() {

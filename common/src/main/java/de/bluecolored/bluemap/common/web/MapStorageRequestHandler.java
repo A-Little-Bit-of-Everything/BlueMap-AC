@@ -88,6 +88,7 @@ public class MapStorageRequestHandler implements HttpRequestHandler {
                 case "textures.json" -> mapStorage.textures().read();
                 case "live/markers.json" -> mapStorage.markers().read();
                 case "live/players.json" -> mapStorage.players().read();
+                case "live/world.json" -> mapStorage.world().read();
                 default -> path.startsWith("assets/") ? mapStorage.asset(path.substring(7)).read() : null;
             };
             if (in != null){

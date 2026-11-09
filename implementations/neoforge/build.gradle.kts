@@ -6,13 +6,13 @@ plugins {
 }
 
 val supportedMinecraftVersions = listOf(
-    "26.1", "26.1.1", "26.1.2",
-    "26.2",
-    "26.3"
+    "1.21.1"
+
+
 )
 
 val minecraftVersion = supportedMinecraftVersions.first()
-val neoVersion = "26.1.0.0-alpha.15+pre-3"
+val neoVersion = "21.1.121"
 
 val shadowInclude: Configuration = configurations.create("shadowInclude")
 configurations.api.get().extendsFrom(shadowInclude)
@@ -24,13 +24,16 @@ neoForge {
 dependencies {
     shadowInclude ( project( ":common" ) ) {
         exclude ( group = "com.google.code.gson", module = "gson" )
+        exclude ( group = "commons-logging", module = "commons-logging" )
     }
+    shadowInclude ( "commons-logging:commons-logging:1.2" )
 
     shadowInclude ( libs.bluecommands.brigadier ) {
         exclude ( group = "com.mojang", module = "brigadier" )
     }
     shadowInclude ( libs.adventure.gson ) {
         exclude ( group = "com.google.code.gson", module = "gson" )
+        exclude ( group = "commons-logging", module = "commons-logging" )
     }
 
     jarJar ( "${libs.flow.math.get().group}:${libs.flow.math.get().name}:[${libs.flow.math.get().version},)" )

@@ -39,6 +39,7 @@ public abstract class KeyedMapStorage implements MapStorage {
     private static final Key TEXTURES_KEY = Key.bluemap("textures");
     private static final Key MARKERS_KEY = Key.bluemap("markers");
     private static final Key PLAYERS_KEY = Key.bluemap("players");
+    private static final Key WORLD_KEY = Key.bluemap("world");
 
     private final Compression compression;
 
@@ -90,6 +91,11 @@ public abstract class KeyedMapStorage implements MapStorage {
     @Override
     public ItemStorage players() {
         return item(PLAYERS_KEY, Compression.NONE);
+    }
+
+    @Override
+    public ItemStorage world() {
+        return item(WORLD_KEY, Compression.NONE);
     }
 
     /**

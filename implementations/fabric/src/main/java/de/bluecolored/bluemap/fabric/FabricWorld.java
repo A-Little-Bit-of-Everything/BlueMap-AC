@@ -32,6 +32,7 @@ import net.minecraft.world.level.storage.LevelResource;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;

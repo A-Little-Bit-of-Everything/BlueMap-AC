@@ -35,6 +35,7 @@ import de.bluecolored.bluemap.common.config.*;
 import de.bluecolored.bluemap.common.debug.StateDumper;
 import de.bluecolored.bluemap.common.live.LiveMarkersDataSupplier;
 import de.bluecolored.bluemap.common.live.LivePlayersDataSupplier;
+import de.bluecolored.bluemap.common.live.LiveWorldDataSupplier;
 import de.bluecolored.bluemap.common.live.PluginLivePlayerInfoTransformer;
 import de.bluecolored.bluemap.common.metrics.Metrics;
 import de.bluecolored.bluemap.common.plugin.skins.PlayerSkinUpdater;
@@ -236,7 +237,8 @@ public class Plugin implements ServerEventListener {
                                     null;
                             LiveMarkersDataSupplier liveMarkersDataSupplier = new LiveMarkersDataSupplier(map.getMarkerSets());
 
-                            mapRequestHandler = new MapRequestHandler(map, livePlayersDataSupplier, liveMarkersDataSupplier, webserverConfig.isSseEnabled());
+                            LiveWorldDataSupplier liveWorldDataSupplier = new LiveWorldDataSupplier(serverInterface, map.getWorld());
+                            mapRequestHandler = new MapRequestHandler(map, livePlayersDataSupplier, liveMarkersDataSupplier, liveWorldDataSupplier, webserverConfig.isSseEnabled());
                         } else {
                             Storage storage = blueMap.getOrLoadStorage(mapConfig.getStorage());
                             mapRequestHandler = new MapRequestHandler(storage.map(id));
@@ -367,7 +369,7 @@ public class Plugin implements ServerEventListener {
                             .filter(map -> pluginState.getMapState(map).isUpdateEnabled())
                             .filter(map -> {
                                 Instant nextUpdate = pluginState.getMapState(map).getLastFullUpdate().plus(fullUpdateInterval);
-                                Duration delay = Instant.now().until(nextUpdate);
+                                Duration delay = Duration.between(Instant.now(), nextUpdate);
                                 return !delay.isPositive();
                             })
                             .sorted(Comparator.comparing(bmMap -> bmMap.getMapSettings().getSorting()))
@@ -631,6 +633,20 @@ public class Plugin implements ServerEventListener {
         var maps = blueMap.getMaps();
         for (BmMap map : maps.values()) {
             map.saveMarkerState();
+        }
+    }
+
+    public void saveWorldStates() {
+        if (blueMap == null) return;
+
+        var maps = blueMap.getMaps();
+        for (BmMap map : maps.values()) {
+            var dataSupplier = new LiveWorldDataSupplier(serverInterface, map.getWorld());
+            try {
+                map.getStorage().world().write((Writer writer) -> writer.write(dataSupplier.get()));
+            } catch (Exception ex) {
+                Logger.global.logError("Failed to save world state for map '" + map.getId() + "'!", ex);
+            }
         }
     }
 

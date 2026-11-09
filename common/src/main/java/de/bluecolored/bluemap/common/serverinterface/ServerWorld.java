@@ -30,6 +30,7 @@ import de.bluecolored.bluemap.core.util.Key;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 public interface ServerWorld {
 
@@ -50,6 +51,26 @@ public interface ServerWorld {
      * @return <code>true</code> if the changes have been successfully persisted, <code>false</code> if this operation is not supported by the implementation
      * @throws IOException if something went wrong trying to persist the changes
      */
+    default OptionalLong getDayTime() {
+        return OptionalLong.empty();
+    }
+
+    default boolean isRaining() {
+        return false;
+    }
+
+    default boolean isThundering() {
+        return false;
+    }
+
+    default boolean isSkyLight() {
+        return true;
+    }
+
+    default boolean isDaylightCycle() {
+        return true;
+    }
+
     default boolean persistWorldChanges() throws IOException {
         return false;
     }

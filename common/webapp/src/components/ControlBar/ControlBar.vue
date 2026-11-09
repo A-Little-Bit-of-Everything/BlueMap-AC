@@ -43,6 +43,8 @@
       </svg>
     </SvgButton>
     <div class="space thin-hide greedy"></div>
+    <WorldTime v-if="showMapMenu" class="thin-hide" />
+    <div class="space thin-hide"></div>
     <DayNightSwitch v-if="showMapMenu" class="thin-hide" :title="$t('lighting.dayNightSwitch.tooltip')" />
     <div class="space thin-hide"></div>
     <ControlsSwitch v-if="showMapMenu && showViewControls" class="thin-hide"></ControlsSwitch>
@@ -63,6 +65,7 @@
 <script>
   import PositionInput from "./PositionInput.vue";
   import Compass from "./Compass.vue";
+  import WorldTime from "./WorldTime.vue";
   import DayNightSwitch from "./DayNightSwitch.vue";
   import ControlsSwitch from "./ControlsSwitch.vue";
   import MenuButton from "./MenuButton.vue";
@@ -74,6 +77,7 @@
       SvgButton,
       MenuButton,
       ControlsSwitch,
+      WorldTime,
       DayNightSwitch,
       PositionInput,
       Compass

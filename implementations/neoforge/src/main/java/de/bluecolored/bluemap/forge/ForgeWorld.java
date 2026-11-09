@@ -26,14 +26,16 @@ package de.bluecolored.bluemap.forge;
 
 import de.bluecolored.bluemap.common.serverinterface.ServerWorld;
 import de.bluecolored.bluemap.core.util.Key;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -52,7 +54,7 @@ public class ForgeWorld implements ServerWorld {
         this.worldFolder = server.getServerDirectory()
                 .resolve(server.getWorldPath(LevelResource.ROOT));
 
-        Identifier id = delegate.dimension().identifier();
+        ResourceLocation id = delegate.dimension().location();
         this.dimension = new Key(id.getNamespace(), id.getPath());
     }
 
@@ -91,6 +93,37 @@ public class ForgeWorld implements ServerWorld {
     @Override
     public Key getDimension() {
         return dimension;
+    }
+
+    @Override
+    public OptionalLong getDayTime() {
+        ServerLevel world = delegate.get();
+        if (world == null) return OptionalLong.empty();
+        return OptionalLong.of(world.getDayTime());
+    }
+
+    @Override
+    public boolean isRaining() {
+        ServerLevel world = delegate.get();
+        return world != null && world.isRaining();
+    }
+
+    @Override
+    public boolean isThundering() {
+        ServerLevel world = delegate.get();
+        return world != null && world.isThundering();
+    }
+
+    @Override
+    public boolean isSkyLight() {
+        ServerLevel world = delegate.get();
+        return world == null || world.dimensionType().hasSkyLight();
+    }
+
+    @Override
+    public boolean isDaylightCycle() {
+        ServerLevel world = delegate.get();
+        return world == null || world.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT);
     }
 
     @Override

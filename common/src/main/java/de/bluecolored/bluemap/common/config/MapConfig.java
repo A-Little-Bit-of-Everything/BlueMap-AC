@@ -25,6 +25,9 @@
 package de.bluecolored.bluemap.common.config;
 
 import com.flowpowered.math.vector.Vector2i;
+import com.flowpowered.math.vector.Vector3i;
+import de.bluecolored.bluemap.core.logger.Logger;
+import de.bluecolored.bluemap.core.map.mask.BoxMask;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -133,12 +136,16 @@ public class MapConfig implements MapSettings {
                 minX != null || maxX != null ||
                 minZ != null || maxZ != null ||
                 minY != null || maxY != null
-        ) throw new ConfigurationException("""
-                Your map-configuration is outdated!
-                Looks like you updated BlueMap but did not follow the upgrade-instructions correctly.
-                To fix your config, make sure to follow all relevant upgrade-instructions from BlueMap's changelogs.
-                You can find them here: https://github.com/BlueMap-Minecraft/BlueMap/releases
-                """.trim());
+        ) {
+            int mx = minX != null ? minX : Integer.MIN_VALUE;
+            int my = minY != null ? minY : Integer.MIN_VALUE;
+            int mz = minZ != null ? minZ : Integer.MIN_VALUE;
+            int Mx = maxX != null ? maxX : Integer.MAX_VALUE;
+            int My = maxY != null ? maxY : Integer.MAX_VALUE;
+            int Mz = maxZ != null ? maxZ : Integer.MAX_VALUE;
+            renderMask.add(new BoxMask(new Vector3i(mx, my, mz), new Vector3i(Mx, My, Mz)), true);
+            Logger.global.logWarning("Map configuration for '" + (name != null ? name : "unknown") + "' contains legacy bounds (min/max x,y,z). Automatically converted to render-mask.");
+        }
     }
 
 }
