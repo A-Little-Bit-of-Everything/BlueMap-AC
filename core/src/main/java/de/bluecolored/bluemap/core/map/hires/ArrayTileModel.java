@@ -618,4 +618,19 @@ public class ArrayTileModel implements TileModel {
         return INSTANCE_POOL;
     }
 
+    @Override
+    public float[] getPositions() {
+        return position;
+    }
+
+    @Override
+    public float[] getUvs() {
+        return uv;
+    }
+
+    @Override
+    public float[] getColors() {
+        return color;
+    }
+
 }

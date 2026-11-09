@@ -13,8 +13,9 @@
 - **Natural Moon Occlusion:** The moon disc dynamically occludes background stars as it traverses the night sky, eliminating stars shining through the lunar body.
 - **Eliminated Glare & Singularities:** Removed the excessive artificial bloom/corona haze from `SkyFragmentShader.js` in favor of authentic Minecraft pixel quads, and resolved projection singularities at zenith and nadir.
 
-#### 2. Runtime Block Renderer Extensibility (`core`)
+#### 2. Runtime Block Renderer Extensibility & Public API (`core`)
 - **Registry Delegation Fix:** In `BlockStateModelRenderer`, updated variant renderer resolution to look up `BlockRendererType.REGISTRY.get(variant.getRenderer().getKey())`. This allows server-side companion mods (such as **BlueMap Disguise** and **BlueMap CTM**) to register and wrap default block renderers at runtime.
+- **Direct Vertex & UV Accessors:** Added public `getPositions()`, `getUvs()`, and `getColors()` getters to `TileModel` and implemented them on `ArrayTileModel`. This provides companion mods direct access to raw model arrays without relying on Java 21 reflection (`setAccessible`), avoiding JPMS access boundaries and classloader restrictions.
 
 #### 3. Resilient Biome Color Calculator Resolution (`core`)
 - **Flexible Calculator Type Parsing:** Updated `BlockColorsConfig` to recognize standard calculator names (`foliage`, `grass`, `water`, `dry_foliage`, `redstone`) even when declared without the legacy leading `@` prefix in custom pack definitions.

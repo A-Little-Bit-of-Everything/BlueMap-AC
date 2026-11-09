@@ -133,4 +133,10 @@ public interface TileModel {
 
     void sort();
 
+    default float[] getPositions() { return null; }
+
+    default float[] getUvs() { return null; }
+
+    default float[] getColors() { return null; }
+
 }
