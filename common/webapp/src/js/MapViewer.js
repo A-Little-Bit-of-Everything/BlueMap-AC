@@ -62,6 +62,8 @@ export class MapViewer {
 				ambientLight: { value: 0 },
 				skyColor: { value: new Color(0.5, 0.5, 1) },
 				voidColor: { value: new Color(0, 0, 0) },
+				sunDirection: { value: new Vector3(0, 1, 0) },
+				dayTime: { value: 6000 },
 				chunkBorders: { value: false },
 				hiresTileMap: {
 					value: {
@@ -171,6 +173,8 @@ export class MapViewer {
 
 		this.camera.aspect = this.rootElement.clientWidth / this.rootElement.clientHeight;
 		this.camera.updateProjectionMatrix();
+		this.skyboxCamera.aspect = this.camera.aspect;
+		this.skyboxCamera.updateProjectionMatrix();
 
 		this.redraw();
 	};
@@ -495,6 +499,10 @@ export class MapViewer {
 	/**
 	 * @returns {CombinedCamera}
 	 */
+	get uniforms() {
+		return this.data.uniforms;
+	}
+
 	get camera() {
 		return this._camera;
 	}

@@ -32,16 +32,17 @@ export class SkyboxScene extends Scene {
 	constructor(uniforms) {
 		super();
 
-		this.matrixWorldAutoUpdate  = false;
+		this.matrixWorldAutoUpdate = false;
 
 		Object.defineProperty(this, 'isSkyboxScene', {value: true});
 
-		let geometry = new SphereGeometry(1, 40, 5);
+		let geometry = new SphereGeometry(1, 64, 32);
 		let material = new ShaderMaterial({
 			uniforms: uniforms,
 			vertexShader: SKY_VERTEX_SHADER,
 			fragmentShader: SKY_FRAGMENT_SHADER,
-			side: BackSide
+			side: BackSide,
+			depthWrite: false
 		});
 		let skybox = new Mesh(geometry, material);
 

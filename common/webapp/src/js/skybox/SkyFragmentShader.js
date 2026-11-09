@@ -29,22 +29,130 @@ uniform float sunlightStrength;
 uniform float ambientLight;
 uniform vec3 skyColor;
 uniform vec3 voidColor;
+uniform vec3 sunDirection;
+uniform float dayTime;
 
 varying vec3 vPosition;
 
-vec3 adjustColor(vec3 color) {
-	return vec3(color * max(sunlightStrength * sunlightStrength, ambientLight));
+float hash31(vec3 p) {
+	p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
+	p *= 17.0;
+	return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+float getStars(vec3 dir) {
+	if (dir.y <= 0.02) return 0.0;
+	vec3 p = dir * 140.0;
+	vec3 id = floor(p);
+	vec3 f = fract(p) - 0.5;
+	float rnd = hash31(id);
+	if (rnd > 0.965) {
+		float d = length(f);
+		float star = smoothstep(0.35, 0.05, d) * (0.65 + 0.35 * sin(rnd * 40.0));
+		float horizonFade = smoothstep(0.02, 0.12, dir.y);
+		return star * horizonFade;
+	}
+	return 0.0;
 }
 
 void main() {
-	float horizonWidth = 0.005;
-	float horizonHeight = 0.0;
-	
-	vec3 adjustedSkyColor = adjustColor(skyColor);
-	vec3 adjustedVoidColor = adjustColor(voidColor);
-	float voidMultiplier = (clamp(vPosition.y - horizonHeight, -horizonWidth, horizonWidth) + horizonWidth) / (horizonWidth * 2.0);
-	vec3 color = mix(adjustedVoidColor, adjustedSkyColor, voidMultiplier);
+	vec3 dir = normalize(vPosition);
+	vec3 sDir = normalize(sunDirection);
+	vec3 mDir = -sDir;
 
-	gl_FragColor = vec4(color, 1.0);
+	float horizonWidth = 0.02;
+	float voidMultiplier = smoothstep(-horizonWidth, horizonWidth, dir.y);
+
+	// sunlightStrength in Minecraft/BlueMap ranges from 0.25 (night) to 1.0 (day)
+	float dayFactor = clamp((sunlightStrength - 0.25) / 0.75, 0.0, 1.0);
+	float sunAlt = sDir.y;
+
+	// Palette
+	vec3 daySky = skyColor;
+	vec3 dayHorizon = mix(skyColor, vec3(0.85, 0.92, 1.0), 0.65);
+	vec3 nightSky = vec3(0.012, 0.018, 0.045);
+	vec3 nightHorizon = vec3(0.028, 0.038, 0.075);
+	vec3 sunsetColor = vec3(1.0, 0.42, 0.12);
+
+	// Gradients from horizon to zenith
+	float heightGradient = clamp(dir.y, 0.0, 1.0);
+	vec3 currentDaySky = mix(dayHorizon, daySky, pow(heightGradient, 0.6));
+	vec3 currentNightSky = mix(nightHorizon, nightSky, pow(heightGradient, 0.6));
+
+	vec3 sky = mix(currentNightSky, currentDaySky, dayFactor);
+
+	// Sunset / Sunrise horizon glow
+	float sunsetFactor = clamp(1.0 - abs(sunAlt) * 4.0, 0.0, 1.0);
+	if (sunsetFactor > 0.01 && dir.y > -0.05) {
+		vec3 flatSDir = vec3(sDir.x, 0.0, sDir.z);
+		float flatLen = length(flatSDir);
+		if (flatLen > 0.001) {
+			float sunFacing = max(0.0, dot(dir, flatSDir / flatLen));
+			float sunsetGlow = pow(sunFacing, 2.5) * sunsetFactor * (1.0 - pow(heightGradient, 0.4));
+			sky = mix(sky, sunsetColor, sunsetGlow * 0.85);
+		}
+	}
+
+	// Night stars (fade out as daylight rises from 0.25 to 0.6)
+	float starVisibility = clamp(1.0 - (sunlightStrength - 0.25) / 0.35, 0.0, 1.0);
+	if (starVisibility > 0.01 && dir.y > 0.0) {
+		float stars = getStars(dir);
+		sky += vec3(stars, stars, stars) * starVisibility;
+	}
+
+	// Minecraft iconic square Sun & Corona
+	float sunCos = dot(dir, sDir);
+	if (sunCos > 0.0 && sDir.y > -0.25) {
+		// Sun corona glow
+		float corona = pow(max(0.0, sunCos), 48.0) * 0.45 + pow(max(0.0, sunCos), 8.0) * 0.15;
+		vec3 coronaColor = mix(vec3(1.0, 0.85, 0.6), vec3(1.0, 1.0, 0.95), clamp(sunAlt * 2.0, 0.0, 1.0));
+		sky += coronaColor * corona * dayFactor;
+
+		// Square Sun Disc
+		if (sunCos > 0.5) {
+			vec3 upVec = abs(sDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+			vec3 rightVec = normalize(cross(sDir, upVec));
+			vec3 forwardVec = cross(rightVec, sDir);
+			float u = dot(dir, rightVec) / sunCos;
+			float v = dot(dir, forwardVec) / sunCos;
+			float maxDist = max(abs(u), abs(v));
+			float sunSquare = 1.0 - smoothstep(0.065, 0.072, maxDist);
+			if (sunSquare > 0.0) {
+				vec3 sunColor = vec3(1.0, 0.98, 0.9) * 1.5;
+				sky = mix(sky, sunColor, sunSquare);
+			}
+		}
+	}
+
+	// Minecraft iconic square Moon & Lunar Halo
+	float moonCos = dot(dir, mDir);
+	if (moonCos > 0.0 && mDir.y > -0.25) {
+		float moonFactor = clamp(1.0 - dayFactor, 0.0, 1.0);
+		// Moon halo
+		float halo = pow(max(0.0, moonCos), 36.0) * 0.25 + pow(max(0.0, moonCos), 6.0) * 0.06;
+		vec3 haloColor = vec3(0.75, 0.85, 1.0);
+		sky += haloColor * halo * moonFactor;
+
+		// Square Moon Disc
+		if (moonCos > 0.5) {
+			vec3 mUpVec = abs(mDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+			vec3 mRightVec = normalize(cross(mDir, mUpVec));
+			vec3 mForwardVec = cross(mRightVec, mDir);
+			float mu = dot(dir, mRightVec) / moonCos;
+			float mv = dot(dir, mForwardVec) / moonCos;
+			float mMaxDist = max(abs(mu), abs(mv));
+			float moonSquare = 1.0 - smoothstep(0.055, 0.062, mMaxDist);
+			if (moonSquare > 0.0) {
+				vec3 moonColor = vec3(0.92, 0.95, 1.0) * 1.3;
+				sky = mix(sky, moonColor, moonSquare * moonFactor);
+			}
+		}
+	}
+
+	// Below horizon void
+	vec3 adjustedVoid = voidColor * max(sunlightStrength * sunlightStrength, ambientLight);
+	vec3 finalColor = mix(adjustedVoid, sky, voidMultiplier);
+
+	gl_FragColor = vec4(finalColor, 1.0);
 }
 `;

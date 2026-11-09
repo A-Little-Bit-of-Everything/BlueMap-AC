@@ -37,6 +37,7 @@ import {RevalidatingFileLoader} from "./util/RevalidatingFileLoader";
 import {i18n, setLanguage} from "../i18n";
 import {PlayerMarkerManager} from "./markers/PlayerMarkerManager";
 import {NormalMarkerManager} from "./markers/NormalMarkerManager";
+import {WorldStateManager} from "./world/WorldState";
 import {reactive} from "vue";
 
 export class BlueMapApp {
@@ -56,6 +57,8 @@ export class BlueMapApp {
         this.playerMarkerManager = null;
         /** @type {NormalMarkerManager} */
         this.markerFileManager = null;
+        /** @type {WorldStateManager} */
+        this.worldState = new WorldStateManager(this.events);
 
         /** @type {EventSource}  */
         this.mapEventSource = null;
@@ -131,6 +134,34 @@ export class BlueMapApp {
 
         this.hashUpdateTimeout = null;
         this.viewAnimation = null;
+
+        this.events.addEventListener("bluemapRenderFrame", () => {
+            if (this.worldState && this.worldState.data.liveDaylight && this.worldState.data.hasData && this.worldState.data.skyLight) {
+                let sunlight = this.worldState.tick();
+                let uniforms = this.mapViewer ? (this.mapViewer.uniforms || (this.mapViewer.data && this.mapViewer.data.uniforms)) : null;
+                if (uniforms && uniforms.sunlightStrength) {
+                    if (Math.abs(uniforms.sunlightStrength.value - sunlight) > 0.005) {
+                        uniforms.sunlightStrength.value = sunlight;
+                    }
+                }
+                this.updateCelestialDome();
+            }
+        });
+
+        setInterval(() => {
+            if (this.worldState && this.worldState.data.liveDaylight && this.worldState.data.hasData && this.worldState.data.skyLight) {
+                let sunlight = this.worldState.tick();
+                let uniforms = this.mapViewer ? (this.mapViewer.uniforms || (this.mapViewer.data && this.mapViewer.data.uniforms)) : null;
+                if (uniforms && uniforms.sunlightStrength) {
+                    if (Math.abs(uniforms.sunlightStrength.value - sunlight) > 0.005) {
+                        uniforms.sunlightStrength.value = sunlight;
+                        this.mapViewer.redraw();
+                    }
+                }
+                this.updateCelestialDome();
+                this.mapViewer.redraw();
+            }
+        }, 1000);
     }
 
 
@@ -263,6 +294,7 @@ export class BlueMapApp {
 
         if (this.playerMarkerManager) this.playerMarkerManager.dispose();
         if (this.markerFileManager) this.markerFileManager.dispose();
+        if (this.worldState) this.worldState.pauseAutoUpdates();
 
         await this.mapViewer.switchMap(map)
 
@@ -274,6 +306,7 @@ export class BlueMapApp {
         await Promise.all([
             this.initPlayerMarkerManager(),
             this.initMarkerFileManager(),
+            this.initWorldStateManager(),
             this.initEventSource(),
         ]);
     }
@@ -422,11 +455,13 @@ export class BlueMapApp {
             alert(this.events, "SSE event source error - enabling polling", "debug");
             this.playerMarkerManager.resumeAutoUpdates();
             this.markerFileManager.resumeAutoUpdates();
+            this.worldState.resumeAutoUpdates();
         });
         this.mapEventSource.addEventListener("open", () => {
             alert(this.events, "Connected to SSE event source - disabling polling", "debug");
             this.playerMarkerManager.pauseAutoUpdates();
             this.markerFileManager.pauseAutoUpdates();
+            this.worldState.pauseAutoUpdates();
         });
 
         this.mapEventSource.addEventListener("tile", ({ data }) => {
@@ -448,6 +483,12 @@ export class BlueMapApp {
 
         this.mapEventSource.addEventListener("marker", ({ data }) => {
             this.markerFileManager.updateFromData(JSON.parse(data));
+        });
+
+        this.mapEventSource.addEventListener("world", ({ data }) => {
+            if (this.worldState && this.worldState.updateFromData(JSON.parse(data))) {
+                this.applyLiveDaylight();
+            }
         });
     }
 
@@ -492,6 +533,89 @@ export class BlueMapApp {
                 alert(this.events, e, "warning");
                 this.markerFileManager.dispose();
             });
+    }
+
+    initWorldStateManager() {
+        if (!this.worldState) {
+            this.worldState = new WorldStateManager(this.events);
+        }
+
+        const map = this.mapViewer.map;
+        if (!map) return Promise.resolve(false);
+
+        this.worldState.setFileUrl(map.data.liveDataRoot + "/live/world.json");
+        this.worldState.setAutoUpdateInterval(0);
+        return this.worldState.load()
+            .then(success => {
+                if (success) {
+                    this.applyLiveDaylight(true);
+                    this.worldState.setAutoUpdateInterval(5000);
+                }
+            })
+            .catch(e => {
+                alert(this.events, e, "warning");
+            });
+    }
+
+    setLiveDaylight(enabled) {
+        if (!this.worldState) return;
+        this.worldState.setLiveDaylight(enabled);
+        if (enabled) {
+            this.applyLiveDaylight(true);
+        } else {
+            this.updateCelestialDome();
+            if (this.mapViewer) this.mapViewer.redraw();
+        }
+    }
+
+    applyLiveDaylight(force = false) {
+        if (!this.worldState || !this.worldState.data.liveDaylight) return;
+        if (!this.worldState.data.hasData || !this.worldState.data.skyLight) return;
+
+        let sunlight = this.worldState.tick(force);
+        let uniforms = this.mapViewer ? (this.mapViewer.uniforms || (this.mapViewer.data && this.mapViewer.data.uniforms)) : null;
+        if (uniforms && uniforms.sunlightStrength) {
+            if (Math.abs(uniforms.sunlightStrength.value - sunlight) > 0.005 || force) {
+                uniforms.sunlightStrength.value = sunlight;
+                this.mapViewer.redraw();
+            }
+        }
+        this.updateCelestialDome();
+    }
+
+    updateCelestialDome() {
+        let uniforms = this.mapViewer ? (this.mapViewer.uniforms || (this.mapViewer.data && this.mapViewer.data.uniforms)) : null;
+        if (!uniforms || !uniforms.sunDirection) return;
+
+        let dayTime = 6000;
+        let isLive = this.worldState && this.worldState.data.liveDaylight && this.worldState.data.hasData && this.worldState.data.skyLight;
+
+        if (isLive) {
+            dayTime = this.worldState.data.dayTime;
+        } else {
+            let light = uniforms.sunlightStrength ? uniforms.sunlightStrength.value : 1.0;
+            let factor = Math.max(0, Math.min(1, (light - 0.25) / 0.75));
+            dayTime = factor > 0.5 ? 6000 : 18000;
+        }
+
+        if (uniforms.dayTime) {
+            uniforms.dayTime.value = dayTime;
+        }
+
+        let angle;
+        if (isLive) {
+            let tick = ((dayTime % 24000) + 24000) % 24000;
+            angle = ((tick / 24000.0) - 0.25) * 2.0 * Math.PI;
+        } else {
+            let light = uniforms.sunlightStrength ? uniforms.sunlightStrength.value : 1.0;
+            let factor = Math.max(0, Math.min(1, (light - 0.25) / 0.75));
+            angle = (1.0 - factor) * Math.PI;
+        }
+
+        let sunX = -Math.sin(angle);
+        let sunY = Math.cos(angle);
+        let sunZ = 0.2 * Math.sin(angle);
+        uniforms.sunDirection.value.set(sunX, sunY, sunZ).normalize();
     }
 
     updateControlsSettings() {
