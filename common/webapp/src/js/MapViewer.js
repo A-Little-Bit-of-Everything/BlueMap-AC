@@ -55,6 +55,15 @@ export class MapViewer {
 		this.rootElement = element;
 		this.events = events;
 
+		const textureLoader = new TextureLoader();
+		const sunTexture = textureLoader.load(SUN_DATA_URI);
+		sunTexture.magFilter = NearestFilter;
+		sunTexture.minFilter = NearestFilter;
+
+		const moonTexture = textureLoader.load(MOON_DATA_URI);
+		moonTexture.magFilter = NearestFilter;
+		moonTexture.minFilter = NearestFilter;
+
 		this.data = reactive({
 			map: null,
 			mapState: "unloaded",
@@ -67,6 +76,9 @@ export class MapViewer {
 				skyColor: { value: new Color(0.5, 0.5, 1) },
 				voidColor: { value: new Color(0, 0, 0) },
 				sunDirection: { value: new Vector3(0, 1, 0) },
+				sunTexture: { value: sunTexture },
+				moonTexture: { value: moonTexture },
+				moonUv: { value: new Vector4(0, 0.5, 0.25, 1.0) },
 				dayTime: { value: 6000 },
 				chunkBorders: { value: false },
 				hiresTileMap: {

@@ -102,23 +102,23 @@ void main() {
 	vec4 moonSample = vec4(0.0);
 	if (moonCos > 0.2 && mDir.y > -0.3) {
 		float moonFactor = clamp(1.0 - dayFactor, 0.0, 1.0);
-		// Moon halo
+		// Moon halo glow
 		float halo = pow(max(0.0, moonCos), 36.0) * 0.25 + pow(max(0.0, moonCos), 6.0) * 0.06;
 		vec3 haloColor = vec3(0.75, 0.85, 1.0);
 		sky += haloColor * halo * moonFactor;
 
-		// Minecraft moon_phases.png quad (size ~0.18 rad)
-		vec3 mUpVec = abs(mDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
-		vec3 mRightVec = normalize(cross(mDir, mUpVec));
-		vec3 mForwardVec = cross(mRightVec, mDir);
+		// Minecraft celestial orientation (revolves around Z axis, never singular)
+		vec3 north = vec3(0.0, 0.0, 1.0);
+		vec3 mRightVec = normalize(cross(mDir, north));
+		vec3 mUpVec = cross(mRightVec, mDir);
 		float mu = dot(dir, mRightVec) / moonCos;
-		float mv = dot(dir, mForwardVec) / moonCos;
-		float moonSize = 0.18;
+		float mv = dot(dir, mUpVec) / moonCos;
+		float moonSize = 0.20;
 		vec2 moonTexUv = vec2(mu / moonSize + 0.5, mv / moonSize + 0.5);
 		if (moonTexUv.x >= 0.0 && moonTexUv.x <= 1.0 && moonTexUv.y >= 0.0 && moonTexUv.y <= 1.0) {
-			vec2 mappedUv = vec2(mix(moonUv.x, moonUv.z, moonTexUv.x), mix(moonUv.y, moonUv.w, 1.0 - moonTexUv.y));
+			vec2 mappedUv = vec2(mix(moonUv.x, moonUv.z, moonTexUv.x), mix(moonUv.y, moonUv.w, moonTexUv.y));
 			moonSample = texture2D(moonTexture, mappedUv);
-			sky += moonSample.rgb * moonFactor * 1.5;
+			sky += moonSample.rgb * moonFactor;
 		}
 	}
 
@@ -127,7 +127,7 @@ void main() {
 	if (starVisibility > 0.01 && dir.y > 0.0) {
 		float stars = getStars(dir);
 		// Hide stars behind lit moon pixels
-		if (length(moonSample.rgb) > 0.02) {
+		if (length(moonSample.rgb) > 0.15) {
 			stars = 0.0;
 		}
 		sky += vec3(stars, stars, stars) * starVisibility;
@@ -141,17 +141,17 @@ void main() {
 		vec3 coronaColor = mix(vec3(1.0, 0.85, 0.6), vec3(1.0, 1.0, 0.95), clamp(sunAlt * 2.0, 0.0, 1.0));
 		sky += coronaColor * corona * dayFactor;
 
-		// Minecraft sun.png quad (size ~0.26 rad)
-		vec3 upVec = abs(sDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
-		vec3 rightVec = normalize(cross(sDir, upVec));
-		vec3 forwardVec = cross(rightVec, sDir);
+		// Minecraft celestial orientation (revolves around Z axis, never singular)
+		vec3 north = vec3(0.0, 0.0, 1.0);
+		vec3 rightVec = normalize(cross(sDir, north));
+		vec3 upVec = cross(rightVec, sDir);
 		float u = dot(dir, rightVec) / sunCos;
-		float v = dot(dir, forwardVec) / sunCos;
-		float sunSize = 0.26;
+		float v = dot(dir, upVec) / sunCos;
+		float sunSize = 0.28;
 		vec2 sunTexUv = vec2(u / sunSize + 0.5, v / sunSize + 0.5);
 		if (sunTexUv.x >= 0.0 && sunTexUv.x <= 1.0 && sunTexUv.y >= 0.0 && sunTexUv.y <= 1.0) {
 			vec4 sunSample = texture2D(sunTexture, sunTexUv);
-			sky += sunSample.rgb * dayFactor * 1.5;
+			sky += sunSample.rgb * dayFactor;
 		}
 	}
 
