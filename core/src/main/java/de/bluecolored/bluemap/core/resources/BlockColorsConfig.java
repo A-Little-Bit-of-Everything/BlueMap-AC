@@ -130,6 +130,10 @@ public class BlockColorsConfig {
             return factory;
         }
 
+        Key directKey = Key.parse(configValue, Key.MINECRAFT_NAMESPACE);
+        BlockColorCalculatorFactory directFactory = BlockColorCalculatorType.REGISTRY.get(directKey);
+        if (directFactory != null) return directFactory;
+
         if (configValue.charAt(0) == '#') {
             try {
                 Color color = new Color();

@@ -94,7 +94,9 @@ public class BlockStateModelRenderer {
             variantColor.set(0f, 0f, 0f, 0f, true);
 
             Variant variant = variants.get(i);
-            blockRenderers.get(variant.getRenderer())
+            BlockRendererType rendererType = BlockRendererType.REGISTRY.get(variant.getRenderer().getKey());
+            if (rendererType == null) rendererType = variant.getRenderer();
+            blockRenderers.get(rendererType)
                     .render(block, variant, tileModel.initialize(), variantColor);
 
             if (variantColor.a > blockColorOpacity)
