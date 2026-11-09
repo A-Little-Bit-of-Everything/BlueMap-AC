@@ -100,20 +100,17 @@ void main() {
 	// Minecraft Moon with authentic moon_phases.png texture
 	float moonCos = dot(dir, mDir);
 	vec4 moonSample = vec4(0.0);
-	if (moonCos > 0.2 && mDir.y > -0.3) {
+	if (moonCos > 0.7 && mDir.y > -0.3) {
 		float moonFactor = clamp(1.0 - dayFactor, 0.0, 1.0);
-		// Moon halo glow
-		float halo = pow(max(0.0, moonCos), 36.0) * 0.25 + pow(max(0.0, moonCos), 6.0) * 0.06;
-		vec3 haloColor = vec3(0.75, 0.85, 1.0);
-		sky += haloColor * halo * moonFactor;
 
 		// Minecraft celestial orientation (revolves around Z axis, never singular)
+		// Moon quad width in vanilla Minecraft is 40.0 at distance 100.0 (size = 0.40)
 		vec3 north = vec3(0.0, 0.0, 1.0);
 		vec3 mRightVec = normalize(cross(mDir, north));
 		vec3 mUpVec = cross(mRightVec, mDir);
 		float mu = dot(dir, mRightVec) / moonCos;
 		float mv = dot(dir, mUpVec) / moonCos;
-		float moonSize = 0.20;
+		float moonSize = 0.40;
 		vec2 moonTexUv = vec2(mu / moonSize + 0.5, mv / moonSize + 0.5);
 		if (moonTexUv.x >= 0.0 && moonTexUv.x <= 1.0 && moonTexUv.y >= 0.0 && moonTexUv.y <= 1.0) {
 			vec2 mappedUv = vec2(mix(moonUv.x, moonUv.z, moonTexUv.x), mix(moonUv.y, moonUv.w, moonTexUv.y));
@@ -135,19 +132,15 @@ void main() {
 
 	// Minecraft Sun with authentic sun.png texture
 	float sunCos = dot(dir, sDir);
-	if (sunCos > 0.2 && sDir.y > -0.3) {
-		// Sun corona glow
-		float corona = pow(max(0.0, sunCos), 48.0) * 0.45 + pow(max(0.0, sunCos), 8.0) * 0.15;
-		vec3 coronaColor = mix(vec3(1.0, 0.85, 0.6), vec3(1.0, 1.0, 0.95), clamp(sunAlt * 2.0, 0.0, 1.0));
-		sky += coronaColor * corona * dayFactor;
-
+	if (sunCos > 0.7 && sDir.y > -0.3) {
 		// Minecraft celestial orientation (revolves around Z axis, never singular)
+		// Sun quad width in vanilla Minecraft is 60.0 at distance 100.0 (size = 0.60)
 		vec3 north = vec3(0.0, 0.0, 1.0);
 		vec3 rightVec = normalize(cross(sDir, north));
 		vec3 upVec = cross(rightVec, sDir);
 		float u = dot(dir, rightVec) / sunCos;
 		float v = dot(dir, upVec) / sunCos;
-		float sunSize = 0.28;
+		float sunSize = 0.60;
 		vec2 sunTexUv = vec2(u / sunSize + 0.5, v / sunSize + 0.5);
 		if (sunTexUv.x >= 0.0 && sunTexUv.x <= 1.0 && sunTexUv.y >= 0.0 && sunTexUv.y <= 1.0) {
 			vec4 sunSample = texture2D(sunTexture, sunTexUv);
